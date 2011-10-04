@@ -1,0 +1,57 @@
+* Fri Sep 02 2011 Carsten Munk <carsten@maemo.org> - 1.28.4
+- Remove gobject-introspection
+
+* Sun Jun 05 2011 Anas Nashif <anas.nashif@intel.com> - 1.28.4
+- Do not depend on gtk-doc and do not build auto-documentation
+
+* Thu May 19 2011 Anas Nashif <anas.nashif@intel.com> - 1.28.4
+- Move documents and utilities to -devel packages
+- Remove optional depednency on libthai
+
+* Tue May 10 2011 Anas Nashif <anas.nashif@intel.com> - 1.28.4
+- Enable introspection
+
+* Fri Apr 20 2011 Bintian Wang <bintian.wang@windriver.com> - 1.28.4
+- Update to version 1.28.4 based on BMC#14334
+
+* Fri Feb 25 2011 Quanxian Wang <quanxian.wang@intel.com> - 1.28.1
+- CVE-2011-0020 Heap-based buffer overflow to fix BMC#13053
+
+* Wed Oct 27 2010 Anas Nashif <anas.nashif@intel.com> - 1.28.1
+- Remove dependency on gobject-introspection
+
+* Fri Aug 13 2010 Damien Lespiau <damien.lespiau@intel.com> - 1.28.1
+- Remove spurious project.diff that ended in the package
+
+* Fri Aug 13 2010 Thomas Wood <thomas.wood@intel.com> - 1.28.1
+- Require gobject-introspection to enable generation of introspection files
+
+* Mon Jul 26 2010 Quanxian Wang <quanxian.wang@intel.com>> - 1.28.1
+- Update to 1.28.1
+
+* Sat Apr 10 2010 Anas Nashif <anas.nashif@intel.com> - 1.28.0
+- Update to 1.28.0
+
+* Mon Mar 29 2010 Yan Li <yan.i.li@intel.com> - 1.27.1
+- Cleaned up multi-arch remains
+
+* Thu Mar 25 2010 Yan Li <yan.i.li@intel.com> - 1.27.1
+- Use spectacle
+- Cleaned up. MeeGo doesn't need those 64 bits and 32 bits co-exist
+  logics
+
+* Wed Mar 24 2010 Yan Li <yan.i.li@intel.com> - 1.27.1
+- Updated to latest upstream release
+- Changelog cleaned up
+
+* Sat Feb 27 2010 Anas Nashif <anas.nashif@intel.com> - 1.26.2
+- Remove explicit dependencies
+
+* Wed Feb 17 2010 Damien Lespiau <damien.lespiau@intel.com> 1.26.2
+- Update to 1.26.2
+
+* Tue Jan 12 2010 Anas Nashif <anas.nashif@intel.com> - 1.25.5
+- Do not use PreReq
+
+* Mon Aug 31 2009 Anas Nashif <anas.nashif@intel.com> - 1.25.5
+- Update to 1.25.5
