@@ -27,18 +27,22 @@
 
 G_BEGIN_DECLS
 
-void               _pango_engine_shape_shape  (PangoEngineShape *engine,
-					       PangoFont        *font,
-					       const char       *text,
-					       int               length,
-					       const PangoAnalysis *analysis,
-					       PangoGlyphString *glyphs);
+void               _pango_engine_shape_shape (PangoEngineShape    *engine,
+					      PangoFont           *font,
+					      const char          *item_text,
+					      unsigned int         item_length,
+					      const char          *paragraph_text,
+					      unsigned int         paragraph_len,
+					      const PangoAnalysis *analysis,
+					      PangoGlyphString    *glyphs);
 PangoCoverageLevel _pango_engine_shape_covers (PangoEngineShape *engine,
 					       PangoFont        *font,
 					       PangoLanguage    *language,
 					       gunichar          wc);
 
-PangoEngineShape *_pango_get_fallback_shaper (void);
+PangoEngineShape *_pango_get_fallback_shaper (void) /* XXX got to go when we switch to harfbuzz-only. */;
+
+PangoEngineLang *_pango_get_language_engine (void);
 
 G_END_DECLS
 

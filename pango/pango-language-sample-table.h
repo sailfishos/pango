@@ -49,6 +49,10 @@
  *
  * Needless to say, the list MUST be sorted on the language code.
  */
+/* Sacrificial define to make introspection happy. */
+#ifndef LANGUAGE
+#define LANGUAGE(x, y, z)
+#endif
 LANGUAGE(
 	 af	/* Afrikaans */,
 	 GLASS,
@@ -206,8 +210,8 @@ LANGUAGE(
 LANGUAGE(
 	 ga	/* Irish */,
 	 WP-PANG,
-	 "D'ḟuascail Íosa Úrṁac na hÓiġe Beannaiṫe pór Éaḃa agus Áḋaiṁ."
-	 /* Jesus, Son of the blessed Virgin, redeemed the seed of Eve and Adam. */
+	 "Chuaigh bé mhórshách le dlúthspád fíorfhinn trí hata mo dhea-phorcáin bhig."
+	 /* A maiden of large appetite with an intensely white, dense spade went through the hat of my good little porker. */
 	)
 LANGUAGE(
 	 gd	/* Scottish Gaelic */,
@@ -225,6 +229,12 @@ LANGUAGE(
 	 got	/* Gothic */,
 	 GLASS,
 	 "𐌼𐌰𐌲 𐌲𐌻𐌴𐍃 𐌹̈𐍄𐌰𐌽, 𐌽𐌹 𐌼𐌹𐍃 𐍅𐌿 𐌽𐌳𐌰𐌽 𐌱𐍂𐌹𐌲𐌲𐌹𐌸."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
+	 gu	/* Gujarati */,
+	 GLASS,
+	 "હું કાચ ખાઇ શકુ છુ અને તેનાથી મને દર્દ નથી થતુ."
 	 /* I can eat glass and it doesn't hurt me. */
 	)
 LANGUAGE(
@@ -310,6 +320,12 @@ LANGUAGE(
 	 /* I can eat glass and it doesn't hurt me. */
 	)
 LANGUAGE(
+	 kn	/* Kannada */,
+	 GLASS,
+	 "ನಾನು ಗಾಜನ್ನು ತಿನ್ನಬಲ್ಲೆ ಮತ್ತು ಅದರಿಂದ ನನಗೆ ನೋವಾಗುವುದಿಲ್ಲ."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
 	 ko	/* Korean */,
 	 WP-SFD,
 	 "다람쥐 헌 쳇바퀴에 타고파"
@@ -348,6 +364,12 @@ LANGUAGE(
 	 mk	/* Macedonian */,
 	 GLASS,
 	 "Можам да јадам стакло, а не ме штета."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
+	 ml	/* Malayalam */,
+	 GLASS,
+	 "വേദനയില്ലാതെ കുപ്പിചില്ലു് എനിയ്ക്കു് കഴിയ്ക്കാം."
 	 /* I can eat glass and it doesn't hurt me. */
 	)
 LANGUAGE(
@@ -406,6 +428,18 @@ LANGUAGE(
 	 oc	/* Occitan */,
 	 GLASS,
 	 "Pòdi manjar de veire, me nafrariá pas."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
+	 or	/* Oriya */,
+	 GLASS,
+	 "ମୁଁ କାଚ ଖାଇପାରେ ଏବଂ ତାହା ମୋର କ୍ଷତି କରିନଥାଏ।."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
+	 pa	/* Punjabi */,
+	 GLASS,
+	 "ਮੈਂ ਗਲਾਸ ਖਾ ਸਕਦਾ ਹਾਂ ਅਤੇ ਇਸ ਨਾਲ ਮੈਨੂੰ ਕੋਈ ਤਕਲੀਫ ਨਹੀਂ."
 	 /* I can eat glass and it doesn't hurt me. */
 	)
 LANGUAGE(
@@ -503,6 +537,12 @@ LANGUAGE(
 	 ta	/* Tamil */,
 	 GLASS,
 	 "நான் கண்ணாடி சாப்பிடுவேன், அதனால் எனக்கு ஒரு கேடும் வராது."
+	 /* I can eat glass and it doesn't hurt me. */
+	)
+LANGUAGE(
+	 te	/* Telugu */,
+	 GLASS,
+	 "నేను గాజు తినగలను అయినా నాకు యేమీ కాదు."
 	 /* I can eat glass and it doesn't hurt me. */
 	)
 LANGUAGE(

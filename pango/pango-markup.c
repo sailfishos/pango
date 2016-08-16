@@ -547,6 +547,65 @@ static const GMarkupParser pango_markup_parser = {
   NULL
 };
 
+static void
+destroy_markup_data (MarkupData *md)
+{
+  g_slist_free_full (md->tag_stack, (GDestroyNotify) open_tag_free);
+  g_slist_free_full (md->to_apply, (GDestroyNotify) pango_attribute_destroy);
+  if (md->text)
+      g_string_free (md->text, TRUE);
+
+  if (md->attr_list)
+    pango_attr_list_unref (md->attr_list);
+
+  g_slice_free (MarkupData, md);
+}
+
+static GMarkupParseContext *
+pango_markup_parser_new_internal (char       accel_marker,
+				  GError   **error,
+				  gboolean   want_attr_list)
+{
+  MarkupData *md;
+  GMarkupParseContext *context;
+
+  md = g_slice_new (MarkupData);
+
+  /* Don't bother creating these if they weren't requested;
+   * might be useful e.g. if you just want to validate
+   * some markup.
+   */
+  if (want_attr_list)
+    md->attr_list = pango_attr_list_new ();
+  else
+    md->attr_list = NULL;
+
+  md->text = g_string_new (NULL);
+
+  md->accel_marker = accel_marker;
+  md->accel_char = 0;
+
+  md->index = 0;
+  md->tag_stack = NULL;
+  md->to_apply = NULL;
+
+  context = g_markup_parse_context_new (&pango_markup_parser,
+					0, md,
+                                        (GDestroyNotify)destroy_markup_data);
+
+  if (!g_markup_parse_context_parse (context,
+                                     "<markup>",
+                                     -1,
+                                     error))
+    goto error;
+
+  return context;
+
+ error:
+  g_markup_parse_context_free (context);
+  return NULL;
+}
+
 /**
  * pango_parse_markup:
  * @markup_text: markup to parse (see <link linkend="PangoMarkupFormat">markup format</link>)
@@ -569,6 +628,8 @@ static const GMarkupParser pango_markup_parser = {
  * Two @accel_marker characters following each other produce a single
  * literal @accel_marker character.
  *
+ * To parse a stream of pango markup incrementally, use pango_markup_parser_new().
+ *
  * If any error happens, none of the output arguments are touched except
  * for @error.
  *
@@ -584,39 +645,11 @@ pango_parse_markup (const char                 *markup_text,
 		    GError                    **error)
 {
   GMarkupParseContext *context = NULL;
-  MarkupData *md = NULL;
-  gboolean needs_root = TRUE;
-  GSList *tmp_list;
+  gboolean ret = FALSE;
   const char *p;
   const char *end;
 
   g_return_val_if_fail (markup_text != NULL, FALSE);
-
-  md = g_slice_new (MarkupData);
-
-  /* Don't bother creating these if they weren't requested;
-   * might be useful e.g. if you just want to validate
-   * some markup.
-   */
-  if (attr_list)
-    md->attr_list = pango_attr_list_new ();
-  else
-    md->attr_list = NULL;
-
-  md->text = g_string_new (NULL);
-
-  if (accel_char)
-    *accel_char = 0;
-
-  md->accel_marker = accel_marker;
-  md->accel_char = 0;
-
-  md->index = 0;
-  md->tag_stack = NULL;
-  md->to_apply = NULL;
-
-  context = g_markup_parse_context_new (&pango_markup_parser,
-					0, md, NULL);
 
   if (length < 0)
     length = strlen (markup_text);
@@ -626,34 +659,112 @@ pango_parse_markup (const char                 *markup_text,
   while (p != end && xml_isspace (*p))
     ++p;
 
-  if (end - p >= 8 && strncmp (p, "<markup>", 8) == 0)
-     needs_root = FALSE;
-
-  if (needs_root)
-    if (!g_markup_parse_context_parse (context,
-				       "<markup>",
-				       -1,
-				       error))
-      goto error;
-
+  context = pango_markup_parser_new_internal (accel_marker,
+                                              error,
+                                              (attr_list != NULL));
+  if (context == NULL)
+    goto out;
 
   if (!g_markup_parse_context_parse (context,
-				     markup_text,
-				     length,
-				     error))
-    goto error;
+                                     markup_text,
+                                     length,
+                                     error))
+    goto out;
 
-  if (needs_root)
-    if (!g_markup_parse_context_parse (context,
-				       "</markup>",
-				       -1,
-				       error))
-      goto error;
+  if (!pango_markup_parser_finish (context,
+                                   attr_list,
+                                   text,
+                                   accel_char,
+                                   error))
+    goto out;
+
+  ret = TRUE;
+
+ out:
+  if (context != NULL)
+    g_markup_parse_context_free (context);
+  return ret;
+}
+
+/**
+ * pango_markup_parser_new:
+ * @accel_marker: character that precedes an accelerator, or 0 for none
+ *
+ * Parses marked-up text (see
+ * <link linkend="PangoMarkupFormat">markup format</link>) to create
+ * a plain-text string and an attribute list.
+ *
+ * If @accel_marker is nonzero, the given character will mark the
+ * character following it as an accelerator. For example, @accel_marker
+ * might be an ampersand or underscore. All characters marked
+ * as an accelerator will receive a %PANGO_UNDERLINE_LOW attribute,
+ * and the first character so marked will be returned in @accel_char,
+ * when calling finish(). Two @accel_marker characters following each
+ * other produce a single literal @accel_marker character.
+ *
+ * To feed markup to the parser, use g_markup_parse_context_parse()
+ * on the returned #GMarkupParseContext. When done with feeding markup
+ * to the parser, use pango_markup_parser_finish() to get the data out
+ * of it, and then use g_markup_parse_context_free() to free it.
+ *
+ * This function is designed for applications that read pango markup
+ * from streams. To simply parse a string containing pango markup,
+ * the simpler pango_parse_markup() API is recommended instead.
+ *
+ * Return value: (transfer none): a #GMarkupParseContext that should be
+ * destroyed with g_markup_parse_context_free().
+ *
+ * Since: 1.31.0
+ **/
+GMarkupParseContext *
+pango_markup_parser_new (gunichar               accel_marker)
+{
+  GError *error = NULL;
+  GMarkupParseContext *context;
+  context = pango_markup_parser_new_internal (accel_marker, &error, TRUE);
+
+  if (context == NULL)
+    g_critical ("Had error when making markup parser: %s\n", error->message);
+
+  return context;
+}
+
+/**
+ * pango_markup_parser_finish:
+ * @context: A valid parse context that was returned from pango_markup_parser_new()
+ * @attr_list: (out) (allow-none): address of return location for a #PangoAttrList, or %NULL
+ * @text: (out) (allow-none): address of return location for text with tags stripped, or %NULL
+ * @accel_char: (out) (allow-none): address of return location for accelerator char, or %NULL
+ * @error: address of return location for errors, or %NULL
+ *
+ * After feeding a pango markup parser some data with g_markup_parse_context_parse(),
+ * use this function to get the list of pango attributes and text out of the
+ * markup. This function will not free @context, use g_markup_parse_context_free()
+ * to do so.
+ *
+ * Return value: %FALSE if @error is set, otherwise %TRUE
+ *
+ * Since: 1.31.0
+ */
+gboolean
+pango_markup_parser_finish (GMarkupParseContext   *context,
+                            PangoAttrList        **attr_list,
+                            char                 **text,
+                            gunichar              *accel_char,
+                            GError               **error)
+{
+  gboolean ret = FALSE;
+  MarkupData *md = g_markup_parse_context_get_user_data (context);
+  GSList *tmp_list;
+
+  if (!g_markup_parse_context_parse (context,
+                                     "</markup>",
+                                     -1,
+                                     error))
+    goto out;
 
   if (!g_markup_parse_context_end_parse (context, error))
-    goto error;
-
-  g_markup_parse_context_free (context);
+    goto out;
 
   if (md->attr_list)
     {
@@ -675,38 +786,25 @@ pango_parse_markup (const char                 *markup_text,
     }
 
   if (attr_list)
-    *attr_list = md->attr_list;
+    {
+      *attr_list = md->attr_list;
+      md->attr_list = NULL;
+    }
 
   if (text)
-    *text = g_string_free (md->text, FALSE);
-  else
-    g_string_free (md->text, TRUE);
+    {
+      *text = g_string_free (md->text, FALSE);
+      md->text = NULL;
+    }
 
   if (accel_char)
     *accel_char = md->accel_char;
 
   g_assert (md->tag_stack == NULL);
+  ret = TRUE;
 
-  g_slice_free (MarkupData, md);
-
-  return TRUE;
-
- error:
-  g_slist_foreach (md->tag_stack, (GFunc) open_tag_free, NULL);
-  g_slist_free (md->tag_stack);
-  g_slist_foreach (md->to_apply, (GFunc) pango_attribute_destroy, NULL);
-  g_slist_free (md->to_apply);
-  g_string_free (md->text, TRUE);
-
-  if (md->attr_list)
-    pango_attr_list_unref (md->attr_list);
-
-  g_slice_free (MarkupData, md);
-
-  if (context)
-    g_markup_parse_context_free (context);
-
-  return FALSE;
+ out:
+  return ret;
 }
 
 static void
@@ -901,14 +999,20 @@ span_parse_boolean (const char *attr_name,
   return TRUE;
 }
 
+extern gboolean
+_pango_color_parse_with_alpha (PangoColor *color,
+                               guint16    *alpha,
+                               const char *spec);
+
 static gboolean
 span_parse_color (const char *attr_name,
 		  const char *attr_val,
 		  PangoColor *color,
+                  guint16 *alpha,
 		  int line_number,
 		  GError **error)
 {
-  if (!pango_color_parse (color, attr_val))
+  if (!_pango_color_parse_with_alpha (color, alpha, attr_val))
     {
       g_set_error (error,
 		   G_MARKUP_ERROR,
@@ -916,6 +1020,56 @@ span_parse_color (const char *attr_name,
 		   _("Value of '%s' attribute on <span> tag "
 		     "on line %d could not be parsed; "
 		     "should be a color specification, not '%s'"),
+		   attr_name, line_number, attr_val);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+span_parse_alpha (const char  *attr_name,
+                  const char  *attr_val,
+                  guint16     *val,
+                  int          line_number,
+                  GError     **error)
+{
+  const char *end = attr_val;
+  int int_val;
+
+  if (pango_scan_int (&end, &int_val))
+    {
+      if (*end == '\0' && int_val > 0 && int_val <= 0xffff)
+        {
+          *val = (guint16)int_val;
+          return TRUE;
+        }
+      else if (*end == '%' && int_val > 0 && int_val <= 100)
+        {
+          *val = (guint16)(int_val * 0xffff / 100);
+          return TRUE;
+        }
+      else
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       _("Value of '%s' attribute on <span> tag "
+                         "on line %d could not be parsed; "
+                         "should be between 0 and 65536 or a "
+                         "percentage, not '%s'"),
+                         attr_name, line_number, attr_val);
+          return FALSE;
+        }
+    }
+  else
+    {
+      g_set_error (error,
+		   G_MARKUP_ERROR,
+		   G_MARKUP_ERROR_INVALID_CONTENT,
+		   _("Value of '%s' attribute on <span> tag "
+		     "on line %d could not be parsed; "
+		     "should be an integer, not '%s'"),
 		   attr_name, line_number, attr_val);
       return FALSE;
     }
@@ -979,6 +1133,9 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
   const char *fallback = NULL;
   const char *gravity = NULL;
   const char *gravity_hint = NULL;
+  const char *font_features = NULL;
+  const char *alpha = NULL;
+  const char *background_alpha = NULL;
 
   g_markup_parse_context_get_position (context,
 				       &line_number, &char_number);
@@ -1007,6 +1164,18 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
       gboolean found = FALSE;
 
       switch (names[i][0]) {
+      case 'a':
+        CHECK_ATTRIBUTE (alpha);
+        break;
+      case 'b':
+	CHECK_ATTRIBUTE (background);
+	CHECK_ATTRIBUTE2(background, "bgcolor");
+        CHECK_ATTRIBUTE (background_alpha);
+        CHECK_ATTRIBUTE2(background_alpha, "bgalpha");
+        break;
+      case 'c':
+	CHECK_ATTRIBUTE2(foreground, "color");
+        break;
       case 'f':
 	CHECK_ATTRIBUTE (fallback);
 	CHECK_ATTRIBUTE2(desc, "font");
@@ -1021,7 +1190,10 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
 	CHECK_ATTRIBUTE2(weight, "font_weight");
 
 	CHECK_ATTRIBUTE (foreground);
-	CHECK_ATTRIBUTE2 (foreground, "fgcolor");
+	CHECK_ATTRIBUTE2(foreground, "fgcolor");
+	CHECK_ATTRIBUTE2(alpha, "fgalpha");
+
+	CHECK_ATTRIBUTE (font_features);
 	break;
       case 's':
 	CHECK_ATTRIBUTE (size);
@@ -1043,9 +1215,6 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
 	CHECK_ATTRIBUTE (underline_color);
 	break;
       default:
-	CHECK_ATTRIBUTE (background);
-	CHECK_ATTRIBUTE2 (background, "bgcolor");
-	CHECK_ATTRIBUTE2(foreground, "color");
 	CHECK_ATTRIBUTE (rise);
 	CHECK_ATTRIBUTE (variant);
 	CHECK_ATTRIBUTE (weight);
@@ -1092,18 +1261,15 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
 	  const char *end;
 	  gint n;
 
-/* cap size from the top at an arbitrary 2048 */
-#define MAX_SIZE (2048 * PANGO_SCALE)
-
-	  if ((end = size, !pango_scan_int (&end, &n)) || *end != '\0' || n < 0 || n > MAX_SIZE)
+	  if ((end = size, !pango_scan_int (&end, &n)) || *end != '\0' || n < 0)
 	    {
 	      g_set_error (error,
 			   G_MARKUP_ERROR,
 			   G_MARKUP_ERROR_INVALID_CONTENT,
 			   _("Value of 'size' attribute on <span> tag on line %d "
-			     "could not be parsed; should be an integer less than %d, or a "
-			     "string such as 'small', not '%s'"),
-			   line_number, MAX_SIZE+1, size);
+			     "could not be parsed; should be an integer no more than %d,"
+			     " or a string such as 'small', not '%s'"),
+			   line_number, INT_MAX, size);
 	      goto error;
 	    }
 
@@ -1223,21 +1389,47 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
   if (G_UNLIKELY (foreground))
     {
       PangoColor color;
+      guint16 alpha;
 
-      if (!span_parse_color ("foreground", foreground, &color, line_number, error))
+      if (!span_parse_color ("foreground", foreground, &color, &alpha, line_number, error))
 	goto error;
 
       add_attribute (tag, pango_attr_foreground_new (color.red, color.green, color.blue));
+      if (alpha != 0)
+        add_attribute (tag, pango_attr_foreground_alpha_new (alpha));
     }
 
   if (G_UNLIKELY (background))
     {
       PangoColor color;
+      guint16 alpha;
 
-      if (!span_parse_color ("background", background, &color, line_number, error))
+      if (!span_parse_color ("background", background, &color, &alpha, line_number, error))
 	goto error;
 
       add_attribute (tag, pango_attr_background_new (color.red, color.green, color.blue));
+      if (alpha != 0)
+        add_attribute (tag, pango_attr_background_alpha_new (alpha));
+    }
+
+  if (G_UNLIKELY (alpha))
+    {
+      guint16 val;
+
+      if (!span_parse_alpha ("alpha", alpha, &val, line_number, error))
+        goto error;
+
+      add_attribute (tag, pango_attr_foreground_alpha_new (val));
+    }
+
+  if (G_UNLIKELY (background_alpha))
+    {
+      guint16 val;
+
+      if (!span_parse_alpha ("background_alpha", background_alpha, &val, line_number, error))
+        goto error;
+
+      add_attribute (tag, pango_attr_background_alpha_new (val));
     }
 
   if (G_UNLIKELY (underline))
@@ -1254,7 +1446,7 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
     {
       PangoColor color;
 
-      if (!span_parse_color ("underline_color", underline_color, &color, line_number, error))
+      if (!span_parse_color ("underline_color", underline_color, &color, NULL, line_number, error))
 	goto error;
 
       add_attribute (tag, pango_attr_underline_color_new (color.red, color.green, color.blue));
@@ -1294,7 +1486,7 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
     {
       PangoColor color;
 
-      if (!span_parse_color ("strikethrough_color", strikethrough_color, &color, line_number, error))
+      if (!span_parse_color ("strikethrough_color", strikethrough_color, &color, NULL, line_number, error))
 	goto error;
 
       add_attribute (tag, pango_attr_strikethrough_color_new (color.red, color.green, color.blue));
@@ -1334,6 +1526,11 @@ span_parse_func     (MarkupData            *md G_GNUC_UNUSED,
     {
       add_attribute (tag,
 		     pango_attr_language_new (pango_language_from_string (lang)));
+    }
+
+  if (G_UNLIKELY (font_features))
+    {
+      add_attribute (tag, pango_attr_font_features_new (font_features));
     }
 
   return TRUE;
