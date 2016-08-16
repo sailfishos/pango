@@ -4,6 +4,7 @@ TEST_TEXTS =			\
 	test-arabic.txt		\
 	test-chinese.txt	\
 	test-devanagari.txt	\
+	test-feature-tag.markup \
 	test-gurmukhi.txt	\
 	test-hebrew.txt		\
 	test-ipa.txt		\
@@ -13,6 +14,7 @@ TEST_TEXTS =			\
 	test-long-paragraph.txt	\
 	test-mixed.markup	\
 	test-mixed.txt		\
+	test-mongolian.txt	\
 	test-nko.txt		\
 	test-opentype-language.markup \
 	test-syriac.txt		\
@@ -25,8 +27,6 @@ TEST_TEXTS =			\
 EXTRA_DIST =			\
 	$(TEST_TEXTS)
 
-CLEANFILES = pangorc
-
 INCLUDES =				\
 	-I$(top_srcdir)			\
 	$(PANGO_DEBUG_FLAGS)		\
@@ -34,6 +34,7 @@ INCLUDES =				\
 	$(XFT_CFLAGS)			\
 	$(CAIRO_CFLAGS)			\
 	$(FREETYPE_CFLAGS)		\
+	$(FONTCONFIG_CFLAGS)		\
 	$(X_CFLAGS)
 
 #########################################################
@@ -48,25 +49,19 @@ pango_view_SOURCES =					\
 pango_view_LDADD =					\
 	../pango/libpango-$(PANGO_API_VERSION).la	\
 	$(GLIB_LIBS)
-if HAVE_X
-pango_view_SOURCES +=					\
-	viewer-x.h					\
-	viewer-x.c					\
-	viewer-pangox.c
-pango_view_LDADD +=					\
-	../pango/libpangox-$(PANGO_API_VERSION).la	\
-	$(X_LIBS)
-endif
 if HAVE_FREETYPE
 pango_view_SOURCES +=					\
 	viewer-pangoft2.c
 pango_view_LDADD +=					\
 	../pango/libpangoft2-$(PANGO_API_VERSION).la	\
-	$(FREETYPE_LIBS)
+	$(FREETYPE_LIBS)				\
+	$(FONTCONFIG_LIBS)
 endif
 if HAVE_XFT
 pango_view_SOURCES +=					\
-	viewer-pangoxft.c
+	viewer-pangoxft.c				\
+	viewer-x.h					\
+	viewer-x.c
 pango_view_LDADD +=					\
 	../pango/libpangoft2-$(PANGO_API_VERSION).la	\
 	../pango/libpangoxft-$(PANGO_API_VERSION).la	\
@@ -86,13 +81,13 @@ endif
 
 MAINTAINERCLEANFILES = pango-view.1.in
 EXTRA_DIST += pango-view.1.in
-CLEANFILES += pango-view.1
+CLEANFILES = pango-view.1
 
 nodist_man_MANS = pango-view.1
 
 # The indirection through pango-view.1.in is to make parallel build work.
 # See bug 587768.
-$(srcdir)/pango-view.1.in: ../configure.in $(pango_view_SOURCES)
+$(srcdir)/pango-view.1.in: ../configure.ac $(pango_view_SOURCES)
 	$(AM_V_GEN) $(top_srcdir)/missing --run \
 	   help2man --no-info --section=1 \
 		    --help-option="--help-all" --output="$@.tmp" \
@@ -105,10 +100,5 @@ pango-view.1: pango-view$(EXEEXT)
 	cp $(srcdir)/pango-view.1.in $@
 
 #########################################################
-
-BUILT_SOURCES = pangorc
-
-pangorc: $(srcdir)/../modules/pangorc
-	cp $(srcdir)/../modules/pangorc $@
 
 -include $(top_srcdir)/git.mk

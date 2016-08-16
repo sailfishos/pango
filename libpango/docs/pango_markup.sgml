@@ -29,8 +29,9 @@ position.
 The solution is to include the text attributes in the string to be
 translated. Pango provides this feature with a small markup language.
 You can parse a marked-up string into the string text plus a
-<link linkend="PangoAttrList">PangoAttrList</link> using the function
-<link linkend="pango-parse-markup">pango_parse_markup()</link>.
+<link linkend="PangoAttrList">PangoAttrList</link> using either of
+<link linkend="pango-parse-markup">pango_parse_markup()</link> or
+<link linkend="pango-markup-parser-new">pango_markup_parser_new()</link>.
 </para>
 
 <para>
@@ -123,12 +124,22 @@ One of 'ultracondensed', 'extracondensed', 'condensed',
 </varlistentry>
 
 <varlistentry>
+<term>font_features<footnote id='since_1_38'><para>Since 1.38</para></footnote></term>
+<listitem><para>
+A comma separated list of OpenType font feature settings, in the same
+syntax as accepted by CSS. E.g: <literal>font_features='dlig=1, -kern, afrc on'</literal>
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
 <term>foreground</term>
 <term>fgcolor<footnoteref linkend='since_1_21'/></term>
 <term>color</term>
 <listitem><para>
-An RGB color specification such as '#00FF00' or a color name such as 
-'red'
+An RGB color specification such as '#00FF00' or a color name such as
+'red'.
+Since 1.38, an RGBA color specification such as '#00FF007F' will
+be interpreted as specifying both a foreground color and foreground alpha.
 </para></listitem>
 </varlistentry>
 
@@ -136,8 +147,28 @@ An RGB color specification such as '#00FF00' or a color name such as
 <term>background</term>
 <term>bgcolor<footnoteref linkend='since_1_21'/></term>
 <listitem><para>
-An RGB color specification such as '#00FF00' or a color name such as 
-'red'
+An RGB color specification such as '#00FF00' or a color name such as
+'red'.
+Since 1.38, an RGBA color specification such as '#00FF007F' will
+be interpreted as specifying both a background color and background alpha.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>alpha</term>
+<term>fgalpha<footnoteref linkend='since_1_38'/></term>
+<listitem><para>
+An alpha value for the foreground color, either a plain integer between 1 and 65536
+or a percentage value like '50%'.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>background_alpha</term>
+<term>bgalpha<footnoteref linkend='since_1_38'/></term>
+<listitem><para>
+An alpha value for the background color, either a plain integer between 1 and 65536
+or a percentage value like '50%'.
 </para></listitem>
 </varlistentry>
 
@@ -156,7 +187,7 @@ or a color name such as 'red'
 
 <varlistentry><term>rise</term>
 <listitem><para>
-Vertical displacement, in 10000ths of an em. Can be negative for 
+Vertical displacement, in Pango units. Can be negative for 
 subscript, positive for superscript.
 </para></listitem>
 </varlistentry>

@@ -20,6 +20,14 @@
  * Boston, MA 02111-1307, USA.
  */
 
+/**
+ * SECTION:coretext-fonts
+ * @short_description:Font handling with CoreText fonts
+ * @title:CoreText Fonts
+ *
+ * The macros and functions in this section are used to access fonts natively on
+ * OS X using the CoreText text rendering subsystem.
+ */
 #include "config.h"
 
 #include "pangocoretext.h"
@@ -45,10 +53,12 @@ pango_core_text_font_finalize (GObject *object)
 {
   PangoCoreTextFont *ctfont = (PangoCoreTextFont *)object;
   PangoCoreTextFontPrivate *priv = ctfont->priv;
-
-  g_assert (priv->fontmap != NULL);
-  g_object_remove_weak_pointer (G_OBJECT (priv->fontmap), (gpointer *) (gpointer) &priv->fontmap);
-  priv->fontmap = NULL;
+  PangoCoreTextFontMap* fontmap = g_weak_ref_get ((GWeakRef *)&priv->fontmap);
+  if (fontmap)
+    {
+      g_weak_ref_clear ((GWeakRef *)&priv->fontmap);
+      g_object_unref (fontmap);
+    }
 
   if (priv->coverage)
     pango_coverage_unref (priv->coverage);
@@ -110,7 +120,7 @@ ct_font_descriptor_get_coverage (CTFontDescriptorRef desc)
 
 static PangoCoverage *
 pango_core_text_font_get_coverage (PangoFont     *font,
-                                   PangoLanguage *language)
+                                   PangoLanguage *language G_GNUC_UNUSED)
 {
   PangoCoreTextFont *ctfont = (PangoCoreTextFont *)font;
   PangoCoreTextFontPrivate *priv = ctfont->priv;
@@ -127,20 +137,51 @@ pango_core_text_font_get_coverage (PangoFont     *font,
   return pango_coverage_ref (priv->coverage);
 }
 
+/* Wrap shaper in PangoEngineShape to pass it through old API,
+ * from times when there were modules and engines. */
+typedef PangoEngineShape      PangoCoreTextShapeEngine;
+typedef PangoEngineShapeClass PangoCoreTextShapeEngineClass;
+static GType pango_core_text_shape_engine_get_type (void) G_GNUC_CONST;
+G_DEFINE_TYPE (PangoCoreTextShapeEngine, pango_core_text_shape_engine, PANGO_TYPE_ENGINE_SHAPE);
+static void
+_pango_core_text_shape_engine_shape (PangoEngineShape    *engine G_GNUC_UNUSED,
+				 PangoFont           *font,
+				 const char          *item_text,
+				 unsigned int         item_length,
+				 const PangoAnalysis *analysis,
+				 PangoGlyphString    *glyphs,
+				 const char          *paragraph_text,
+				 unsigned int         paragraph_length)
+{
+  _pango_core_text_shape (font, item_text, item_length, analysis, glyphs,
+		      paragraph_text, paragraph_length);
+}
+static void
+pango_core_text_shape_engine_class_init (PangoEngineShapeClass *class)
+{
+  class->script_shape = _pango_core_text_shape_engine_shape;
+}
+static void
+pango_core_text_shape_engine_init (PangoEngineShape *object)
+{
+}
+
 static PangoEngineShape *
 pango_core_text_font_find_shaper (PangoFont     *font,
-                                  PangoLanguage *language,
+                                  PangoLanguage *language G_GNUC_UNUSED,
                                   guint32        ch)
 {
-  /* FIXME: Implement */
-  return NULL;
+  static PangoEngineShape *shaper;
+  if (g_once_init_enter (&shaper))
+    g_once_init_leave (&shaper, g_object_new (pango_core_text_shape_engine_get_type(), NULL));
+  return shaper;
 }
 
 static PangoFontMap *
 pango_core_text_font_get_font_map (PangoFont *font)
 {
   PangoCoreTextFont *ctfont = (PangoCoreTextFont *)font;
-
+  /* FIXME: Not thread safe! */
   return ctfont->priv->fontmap;
 }
 
@@ -174,9 +215,8 @@ _pango_core_text_font_set_font_map (PangoCoreTextFont    *font,
 {
   PangoCoreTextFontPrivate *priv = font->priv;
 
-  g_assert (priv->fontmap == NULL);
-  priv->fontmap = (PangoFontMap *) fontmap;
-  g_object_add_weak_pointer (G_OBJECT (priv->fontmap), (gpointer *) (gpointer) &priv->fontmap);
+  g_return_if_fail (priv->fontmap == NULL);
+  g_weak_ref_set((GWeakRef *) &priv->fontmap, fontmap);
 }
 
 void

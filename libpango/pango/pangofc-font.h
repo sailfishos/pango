@@ -22,12 +22,10 @@
 #ifndef __PANGO_FC_FONT_H__
 #define __PANGO_FC_FONT_H__
 
+#include <pango/pango.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <fontconfig/fontconfig.h>
-#include <pango/pango-font.h>
-#include <pango/pango-fontmap.h>
-#include <pango/pango-glyph.h>
 
 G_BEGIN_DECLS
 
@@ -93,13 +91,12 @@ struct _PangoFcFont
  *   corresponding to the specified character.
  * @get_glyph: Gets the glyph that corresponds to the given
  *   Unicode character.
- * @get_unknown_glyph: Gets the glyph that should be used to
- *   display an unknown-glyph indication for the specified
- *   Unicode character.
- *   May be %NULL.
- * @shutdown: Performs any font-specific shutdown code that
- *   needs to be done when pango_fc_font_map_shutdown is called.
- *   May be %NULL.
+ * @get_unknown_glyph: (nullable): Gets the glyph that
+ *   should be used to display an unknown-glyph indication
+ *   for the specified Unicode character.  May be %NULL.
+ * @shutdown: (nullable): Performs any font-specific
+ *   shutdown code that needs to be done when
+ *   pango_fc_font_map_shutdown is called.  May be %NULL.
  *
  * Class structure for #PangoFcFont.
  **/
@@ -137,9 +134,10 @@ guint      pango_fc_font_get_glyph         (PangoFcFont      *font,
 G_DEPRECATED_FOR(PANGO_GET_UNKNOWN_GLYPH)
 PangoGlyph pango_fc_font_get_unknown_glyph (PangoFcFont      *font,
 					    gunichar          wc);
-#endif /* PANGO_DISABLE_DEPRECATED */
+G_DEPRECATED
 void       pango_fc_font_kern_glyphs       (PangoFcFont      *font,
 					    PangoGlyphString *glyphs);
+#endif /* PANGO_DISABLE_DEPRECATED */
 
 #endif /* PANGO_ENABLE_ENGINE || PANGO_ENABLE_BACKEND */
 
