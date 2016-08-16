@@ -4,7 +4,7 @@
 Name:       pango
 
 Summary:    System for layout and rendering of internationalized text
-Version:    1.36.1
+Version:    1.40.1
 Release:    1
 Group:      System/GUI/GNOME
 License:    LGPLv2+
@@ -22,6 +22,7 @@ BuildRequires:  pkgconfig(gmodule-no-export-2.0)
 BuildRequires:  pkgconfig(cairo) >= 1.7.6
 BuildRequires:  pkgconfig(freetype2)
 BuildRequires:  pkgconfig(fontconfig) >= 2.5.0
+BuildRequires:  pkgconfig(harfbuzz)
 
 %description
 Pango is a library for laying out and rendering of text, with an emphasis
@@ -66,15 +67,8 @@ make %{?jobs:-j%jobs}
 rm -rf %{buildroot}
 %make_install
 
-# the ghost modules file
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/pango/
-touch $RPM_BUILD_ROOT%{_sysconfdir}/pango/pango.modules
-# << install post
-
-
 %post
 /sbin/ldconfig
-%{_bindir}/pango-querymodules > %{_sysconfdir}/pango/pango.modules
 
 %postun -p /sbin/ldconfig
 
@@ -82,13 +76,6 @@ touch $RPM_BUILD_ROOT%{_sysconfdir}/pango/pango.modules
 %defattr(-,root,root,-)
 %doc AUTHORS COPYING
 %{_libdir}/libpango*-*.so.*
-%{_bindir}/pango-querymodules
-%{_libdir}/pango
-%dir %{_sysconfdir}/pango
-%ghost %{_sysconfdir}/pango/pango.modules
-%if %{with X11}
-%config %{_sysconfdir}/pango/pangox.aliases
-%endif
 
 %files devel
 %defattr(-,root,root,-)
