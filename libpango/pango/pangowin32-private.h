@@ -52,8 +52,7 @@
 #define PING(printlist)
 #endif
 
-#include <pango/pango-modules.h>
-#include <pango/pangowin32.h>
+#include "pangowin32.h"
 
 typedef enum
   {
@@ -85,6 +84,7 @@ typedef struct _PangoWin32FontMapClass PangoWin32FontMapClass;
 typedef struct _PangoWin32Font         PangoWin32Font;
 typedef struct _PangoWin32FontClass    PangoWin32FontClass;
 typedef struct _PangoWin32Face         PangoWin32Face;
+typedef PangoFontFaceClass             PangoWin32FaceClass;
 typedef struct _PangoWin32GlyphInfo    PangoWin32GlyphInfo;
 typedef struct _PangoWin32MetricsInfo  PangoWin32MetricsInfo;
 
@@ -273,6 +273,15 @@ gboolean	_pango_win32_get_name_record        (HDC                 hdc,
 						     struct name_record *record);
 
 HFONT		_pango_win32_font_get_hfont         (PangoFont          *font);
+
+void
+_pango_win32_shape (PangoFont        	*font,
+		    const char       	*text,
+		    unsigned int     	 length,
+		    const PangoAnalysis *analysis,
+		    PangoGlyphString    *glyphs,
+		    const char          *paragraph_text G_GNUC_UNUSED,
+		    unsigned int         paragraph_length G_GNUC_UNUSED);
 
 extern HDC _pango_win32_hdc;
 extern OSVERSIONINFO _pango_win32_os_version_info;
