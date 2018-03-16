@@ -49,7 +49,7 @@ for the pango package.
 
 
 %prep
-%setup -q -n %{name}-%{version}/libpango
+%setup -q -n %{name}-%{version}/upstream
 
 %build
 
