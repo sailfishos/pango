@@ -1,28 +1,22 @@
-# Conditional building of X11 related things
-%bcond_with X11
-
 Name:       pango
-
 Summary:    System for layout and rendering of internationalized text
-Version:    1.40.1
+Version:    1.42.3
 Release:    1
 Group:      System/GUI/GNOME
 License:    LGPLv2+
 URL:        http://www.pango.org
-Source0:    http://download.gnome.org/sources/pango/1.30/pango-%{version}.tar.xz
+Source0:    http://download.gnome.org/sources/pango/1.42/pango-%{version}.tar.xz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-%if %{with X11}
-BuildRequires:  pkgconfig(xft) >= 2.0.0
-BuildRequires:  pkgconfig(xrender)
-%endif
 BuildRequires:  pkgconfig(glib-2.0) >= 2.31.0
 BuildRequires:  pkgconfig(gobject-2.0)
 BuildRequires:  pkgconfig(gmodule-no-export-2.0)
 BuildRequires:  pkgconfig(cairo) >= 1.7.6
 BuildRequires:  pkgconfig(freetype2)
 BuildRequires:  pkgconfig(fontconfig) >= 2.5.0
-BuildRequires:  pkgconfig(harfbuzz)
+BuildRequires:  pkgconfig(harfbuzz) >= 1.4.2
+BuildRequires:  pkgconfig(fribidi)
+BuildRequires:  meson
 
 %description
 Pango is a library for laying out and rendering of text, with an emphasis
@@ -46,26 +40,24 @@ Requires:   %{name} = %{version}-%{release}
 The pango-devel package includes the header files and developer documentation
 for the pango package.
 
+%package tests
+Summary: Tests for the %{name} package
+Requires: %{name} = %{version}-%{release}
+
+%description tests
+The %{name}-tests package contains tests that can be used to verify
+the functionality of the installed %{name} package.
 
 
 %prep
 %setup -q -n %{name}-%{version}/upstream
 
 %build
-
-echo "EXTRA_DIST = missing-gtk-doc" > gtk-doc.make
-
-%autogen --disable-static \
-    --disable-gtk-doc \
-    --disable-doc-cross-references \
-    --with-included-modules=basic-fc \
-    --disable-introspection
-
-make %{?jobs:-j%jobs}
+%meson -Dgir=false -Denable_docs=false
+%meson_build
 
 %install
-rm -rf %{buildroot}
-%make_install
+%meson_install
 
 %post
 /sbin/ldconfig
@@ -74,16 +66,20 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING
+%doc COPYING
 %{_libdir}/libpango*-*.so.*
 
 %files devel
+%doc AUTHORS
 %defattr(-,root,root,-)
-%doc %{_mandir}/man1/*
-%{_datadir}/man/man1/pango-view.1.gz
-%doc pango-view/HELLO.txt
 %{_bindir}/pango-view
+%{_bindir}/pango-list
 %{_libdir}/libpango*.so
 %{_includedir}/*
 %{_libdir}/pkgconfig/*
 #%doc %{_datadir}/gtk-doc/html/pango
+
+%files tests
+%{_libexecdir}/installed-tests/%{name}
+%{_datadir}/installed-tests
+
