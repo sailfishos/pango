@@ -1,11 +1,10 @@
 Name:       pango
 Summary:    System for layout and rendering of internationalized text
-Version:    1.42.3
+Version:    1.48.10
 Release:    1
-Group:      System/GUI/GNOME
 License:    LGPLv2+
 URL:        http://www.pango.org
-Source0:    http://download.gnome.org/sources/pango/1.42/pango-%{version}.tar.xz
+Source0:    %{name}-%{version}.tar.xz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(glib-2.0) >= 2.31.0
@@ -33,27 +32,18 @@ quality text handling and graphics rendering.
 
 %package devel
 Summary:    Development files for pango
-Group:      Development/Libraries
 Requires:   %{name} = %{version}-%{release}
 
 %description devel
 The pango-devel package includes the header files and developer documentation
 for the pango package.
 
-%package tests
-Summary: Tests for the %{name} package
-Requires: %{name} = %{version}-%{release}
-
-%description tests
-The %{name}-tests package contains tests that can be used to verify
-the functionality of the installed %{name} package.
-
 
 %prep
-%setup -q -n %{name}-%{version}/upstream
+%autosetup -p1 -n %{name}-%{version}/upstream
 
 %build
-%meson -Dgir=false -Denable_docs=false
+%meson -Dintrospection=disabled -Dgtk_doc=false -Dlibthai=disabled -Dxft=disabled
 %meson_build
 
 %install
@@ -66,20 +56,15 @@ the functionality of the installed %{name} package.
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING
+%license COPYING
 %{_libdir}/libpango*-*.so.*
 
 %files devel
-%doc AUTHORS
 %defattr(-,root,root,-)
 %{_bindir}/pango-view
 %{_bindir}/pango-list
+%{_bindir}/pango-segmentation
 %{_libdir}/libpango*.so
 %{_includedir}/*
 %{_libdir}/pkgconfig/*
-#%doc %{_datadir}/gtk-doc/html/pango
-
-%files tests
-%{_libexecdir}/installed-tests/%{name}
-%{_datadir}/installed-tests
 
