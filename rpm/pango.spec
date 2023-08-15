@@ -1,21 +1,22 @@
 Name:       pango
 Summary:    System for layout and rendering of internationalized text
-Version:    1.48.10
+Version:    1.51.1
 Release:    1
 License:    LGPLv2+
 URL:        http://www.pango.org
 Source0:    %{name}-%{version}.tar.xz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-BuildRequires:  pkgconfig(glib-2.0) >= 2.31.0
-BuildRequires:  pkgconfig(gobject-2.0)
+BuildRequires:  pkgconfig(glib-2.0) >= 2.62.0
 BuildRequires:  pkgconfig(gmodule-no-export-2.0)
-BuildRequires:  pkgconfig(cairo) >= 1.7.6
-BuildRequires:  pkgconfig(freetype2)
+BuildRequires:  pkgconfig(cairo) >= 1.12.10
+BuildRequires:  pkgconfig(cairo-gobject) >= 1.12.10
+BuildRequires:  pkgconfig(freetype2) >= 2.1.5
 BuildRequires:  pkgconfig(fontconfig) >= 2.5.0
 BuildRequires:  pkgconfig(harfbuzz) >= 1.4.2
-BuildRequires:  pkgconfig(fribidi)
+BuildRequires:  pkgconfig(fribidi) >= 1.0.6
 BuildRequires:  meson
+BuildRequires:  ccache
 
 %description
 Pango is a library for laying out and rendering of text, with an emphasis
